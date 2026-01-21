@@ -1,0 +1,53 @@
+from flask import Flask, jsonify, request
+import time
+
+app = Flask(__name__)
+
+NODE_ID = "B"
+PORT = 8001
+
+state = "follower"
+current_term = 0
+voted_for = None
+
+@app.route('/request_vote', methods=['POST'])
+def request_vote():
+    global voted_for, current_term, state
+    data = request.json
+    
+    print(f"\n[Node {NODE_ID}] 📥 Vote request from {data['candidate_id']}")
+    
+    # Always vote for requester (for demo)
+    voted_for = data['candidate_id']
+    current_term = data['term']
+    state = "follower"
+    
+    print(f"✅ [Node {NODE_ID}] VOTED for {data['candidate_id']}")
+    return jsonify({'vote_granted': True, 'term': current_term})
+
+@app.route('/append_entries', methods=['POST'])
+def append_entries():
+    print(f"[Node {NODE_ID}] 💓 Heartbeat received")
+    return jsonify({'success': True, 'term': 0})
+
+@app.route('/client_command', methods=['POST'])
+def client_command():
+    print(f"\n[Node {NODE_ID}] Command received (would be leader)")
+    return jsonify({'success': True, 'node': NODE_ID})
+
+@app.route('/status')
+def status():
+    return jsonify({
+        'id': NODE_ID,
+        'state': state,
+        'term': current_term,
+        'voted_for': voted_for
+    })
+
+@app.route('/')
+def home():
+    return f"Node {NODE_ID} - {state}"
+
+if __name__ == '__main__':
+    print(f"Starting Node {NODE_ID} on port {PORT}")
+    app.run(host='0.0.0.0', port=PORT, debug=False)
